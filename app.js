@@ -1,16 +1,31 @@
 const express = require('express');
-const http =require("http")
-const app = express();
+const http = require('http');
+const path = require('path');
+const socketio = require('socket.io');
 
-const socketio = require("socket.io");
+const app = express();
 const server = http.createServer(app);
 const io = socketio(server);
 
-app.set("view engine","ejs");
-app.set(express.static(path.join(__dirname,"public")))
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+app.use(express.static(path.join(__dirname, 'public')));
 
-app.get("/",function(req,res){
-    res.send("Welcome to the homepage!");
-})
+io.on('connection', function(socket) {
+    socket.on("send-location", function(data) {
+        io.emit("receive-location", { id: socket.id, ...data });
+    });
 
-server.listen(3000)
+    socket.on("disconnect",function(){
+        io.emit("user-disconnected",socket.id)
+    })
+    console.log('connected');
+});
+
+app.get('/', function(req, res) {
+    res.render('index');
+});
+
+server.listen(3000, function() {
+    console.log('Server is running on port 3000');
+});
